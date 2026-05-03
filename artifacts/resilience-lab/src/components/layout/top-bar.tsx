@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   useGetGridSummary, useInjectShock, useTriggerSentinelScan,
   getGetGridStateQueryKey, getGetGridSummaryQueryKey,
 } from "@workspace/api-client-react";
-import { type InjectShockBodySeverity } from "@workspace/api-client-react";
+import { type InjectShockBodySeverity, type AgentLogEntry } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, ShieldAlert, Zap, AlertTriangle, CheckCircle, Server, Clock, Radio, Terminal } from "lucide-react";
+import { Activity, ShieldAlert, Zap, AlertTriangle, CheckCircle, Server, Clock, Radio, Terminal, Command, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -28,11 +28,31 @@ const SCENARIOS: { id: ScenarioId; name: string; icon: string; color: string; de
 interface TopBarProps {
   onToggleConsole: () => void;
   consoleOpen: boolean;
+  onOpenPalette: () => void;
+  logs: AgentLogEntry[];
 }
 
-export function TopBar({ onToggleConsole, consoleOpen }: TopBarProps) {
+function useUptime() {
+  const startRef = useRef(Date.now());
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(Date.now() - startRef.current), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const h = Math.floor(elapsed / 3_600_000);
+  const m = Math.floor((elapsed % 3_600_000) / 60_000);
+  const s = Math.floor((elapsed % 60_000) / 1000);
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+
+export function TopBar({ onToggleConsole, consoleOpen, onOpenPalette, logs }: TopBarProps) {
   const queryClient = useQueryClient();
   const [scenarioLoading, setScenarioLoading] = useState<string | null>(null);
+  const uptime = useUptime();
+
+  const incidentsResolved = logs.filter(
+    (l) => l.agent === "validator" && l.level === "success"
+  ).length;
 
   const { data: summary } = useGetGridSummary({
     query: { queryKey: getGetGridSummaryQueryKey(), refetchInterval: 2000 },
@@ -138,6 +158,33 @@ export function TopBar({ onToggleConsole, consoleOpen }: TopBarProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-2 relative z-10 shrink-0">
+
+        {/* Live stats */}
+        <div className="hidden lg:flex items-center gap-3 mr-2 font-mono text-[10px] text-muted-foreground border border-border/40 rounded px-3 py-1.5 bg-background/30">
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3" />
+            <span className="tabular-nums">{uptime}</span>
+          </span>
+          <span className="text-border">|</span>
+          <span className="flex items-center gap-1.5">
+            <TrendingUp className="w-3 h-3 text-green-400" />
+            <span className={cn("tabular-nums", incidentsResolved > 0 ? "text-green-400" : "")}>
+              {incidentsResolved} resolved
+            </span>
+          </span>
+        </div>
+
+        {/* Command palette trigger */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 font-mono text-xs h-8 gap-1.5"
+          onClick={onOpenPalette}
+        >
+          <Command className="w-3 h-3" />
+          <span className="hidden sm:inline">⌘K</span>
+        </Button>
+
         {/* Console toggle */}
         <Button
           variant={consoleOpen ? "default" : "outline"}
