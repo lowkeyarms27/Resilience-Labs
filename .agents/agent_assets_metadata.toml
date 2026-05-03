@@ -1,0 +1,13 @@
+uploads = []
+
+[[generated]]
+id = "z3-CLGyTzVlRmBzDLKOYu"
+uri = "file://attached_assets/generated_images/resilience-lab-cover.png"
+type = "image"
+title = "resilience lab cover"
+
+[[outputs]]
+id = "d7ipsBzgTgTwYGYGxi0Pd"
+uri = "file://attached_assets/generated_images/resilience-lab-cover.png"
+type = "image"
+title = "Resilience Lab — Project Cover Image"
