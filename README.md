@@ -1,6 +1,6 @@
 # Resilience Lab
 
-A dark enterprise cybersecurity simulation platform that monitors a 16-node infrastructure grid and deploys a 5-agent AI pipeline to autonomously detect, diagnose, and repair incidents — with human approval gates for high-risk actions.
+A dark enterprise cybersecurity simulation platform that monitors a 16-node infrastructure grid and deploys a 4-agent AI pipeline to autonomously detect, diagnose, and repair incidents — with human approval gates for high-risk actions.
 
 ## What It Does
 
