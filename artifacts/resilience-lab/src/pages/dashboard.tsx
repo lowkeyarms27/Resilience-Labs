@@ -12,8 +12,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export default function Dashboard() {
-  const [consoleOpen, setPaletteOpen]  = useState(false);
-  const [paletteOpen, setConsoleOpen]  = useState(false);
+  const [consoleOpen, setConsoleOpen]  = useState(false);
+  const [paletteOpen, setPaletteOpen]  = useState(false);
   const { logs, thinking, approvals }  = useAgentLogs();
   const queryClient = useQueryClient();
 
@@ -43,16 +43,16 @@ export default function Dashboard() {
     // Ctrl+K / Cmd+K — command palette
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
-      setConsoleOpen((v) => !v);
+      setPaletteOpen((v) => !v);
       return;
     }
 
     if (isInput || paletteOpen || consoleOpen) return;
 
     if (e.key === "t" || e.key === "T") { triggerScan.mutate(); }
-    if (e.key === "c" || e.key === "C") { setPaletteOpen((v) => !v); }
+    if (e.key === "c" || e.key === "C") { setConsoleOpen((v) => !v); }
     if (e.key === "i" || e.key === "I") { injectShock.mutate({ data: { severity: "medium" } }); }
-    if (e.key === "Escape")             { setPaletteOpen(false); }
+    if (e.key === "Escape")             { setPaletteOpen(false); setConsoleOpen(false); }
   }, [paletteOpen, consoleOpen, triggerScan, injectShock]);
 
   useEffect(() => {
@@ -63,9 +63,9 @@ export default function Dashboard() {
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-background text-foreground selection:bg-primary/30">
       <TopBar
-        onToggleConsole={() => setPaletteOpen((v) => !v)}
+        onToggleConsole={() => setConsoleOpen((v) => !v)}
         consoleOpen={consoleOpen}
-        onOpenPalette={() => setConsoleOpen(true)}
+        onOpenPalette={() => setPaletteOpen(true)}
         logs={logs}
       />
 
@@ -76,12 +76,12 @@ export default function Dashboard() {
         <AgentLogs logs={logs} thinking={thinking} />
       </div>
 
-      {consoleOpen && <CommandConsole onClose={() => setPaletteOpen(false)} />}
+      {consoleOpen && <CommandConsole onClose={() => setConsoleOpen(false)} />}
 
       <CommandPalette
         open={paletteOpen}
-        onClose={() => setConsoleOpen(false)}
-        onOpenConsole={() => { setConsoleOpen(false); setPaletteOpen(true); }}
+        onClose={() => setPaletteOpen(false)}
+        onOpenConsole={() => { setPaletteOpen(false); setConsoleOpen(true); }}
       />
 
       <ApprovalQueue approvals={approvals} />

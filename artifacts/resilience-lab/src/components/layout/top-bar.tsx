@@ -160,7 +160,7 @@ export function TopBar({ onToggleConsole, consoleOpen, onOpenPalette, logs }: To
       <div className="flex items-center gap-2 relative z-10 shrink-0">
 
         {/* Live stats */}
-        <div className="hidden lg:flex items-center gap-3 mr-2 font-mono text-[10px] text-muted-foreground border border-border/40 rounded px-3 py-1.5 bg-background/30">
+        <div className="flex items-center gap-3 mr-2 font-mono text-[10px] text-muted-foreground border border-border/40 rounded px-3 py-1.5 bg-background/30">
           <span className="flex items-center gap-1.5">
             <Clock className="w-3 h-3" />
             <span className="tabular-nums">{uptime}</span>
