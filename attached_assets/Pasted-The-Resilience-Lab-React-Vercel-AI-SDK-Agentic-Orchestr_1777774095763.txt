@@ -1,0 +1,42 @@
+The "Resilience Lab" (React + Vercel AI SDK + Agentic Orchestration)
+This is not a "game"—it is an Autonomous System Monitor. The "Game" element is simply the way you visualize the AI's complex decision-making.
+
+The Core "Prize-Winning" Features:
+Orchestration: Use a LangGraph.js or Vercel AI SDK pattern to manage two distinct agent personas:
+
+The Sentinel: Continuously monitors the "Health" of the system grid.
+
+The Engineer: Executes repair/patching tasks.
+
+Observability (The "Winning" Edge): You build a sidebar that logs the "Agent Internal Monologue." This is how you prove to judges that your system is reasoning.
+
+Example: "Sentinel: Node-7 latency spike detected. Severity: High." -> "Engineer: Acknowledged. Re-routing traffic to Node-8 before repairing Node-7."
+
+Resilience/Fault Tolerance: Add a "God Mode" button to inject Random System Failures. The judges will be impressed when they "break" your city and watch the AI agents autonomously coordinate a fix without you touching the keyboard.
+
+🛠️ The Master Prompt (Paste this into Replit Agent)
+"Create a new React project called 'Resilience-Lab'.
+
+1. The Stack: Next.js, Tailwind CSS, Vercel AI SDK (for agent reasoning), and Replit DB (for system state persistence).
+
+2. The UI: > - A central 'City Grid' (CSS Grid/Flexbox) where nodes change color based on health (Green=Healthy, Red=Failing).
+
+A persistent 'Agent Log' sidebar showing the real-time reasoning and communication between the 'Sentinel' (monitoring) and 'Engineer' (fixing) agents.
+
+A 'System Health' top-bar showing global resilience.
+
+3. The Agentic Logic:
+
+Use the Vercel AI SDK to orchestrate two agents.
+
+Sentinel: Scans the grid state, identifies failures, and logs warnings.
+
+Engineer: Receives alerts and autonomously performs 'repair' actions to restore node health.
+
+Use state-management to ensure agents don't duplicate tasks (orchestration).  
+
+4. Interactive 'God Mode':
+
+Add a button to 'Inject System Shock.' This triggers a random node failure. The system must then show the agents 'discussing' and 'fixing' the issue in the log.
+
+5. Aesthetics: > - Sleek, dark, 'Enterprise Cybersecurity' vibe. Minimalist icons. Professional sans-serif typography. No game-y textures—think 'System Monitor Dashboard.'"

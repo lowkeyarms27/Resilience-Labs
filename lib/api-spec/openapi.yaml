@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: grid
+    description: Grid state management
+  - name: agents
+    description: AI agent orchestration
 paths:
   /healthz:
     get:
@@ -24,6 +28,122 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /grid/state:
+    get:
+      operationId: getGridState
+      tags: [grid]
+      summary: Get current grid state
+      description: Returns all nodes and their health status
+      responses:
+        "200":
+          description: Grid state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GridState"
+
+  /grid/inject-shock:
+    post:
+      operationId: injectShock
+      tags: [grid]
+      summary: Inject a random system shock (God Mode)
+      description: Randomly fails one or more nodes and triggers agent response
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InjectShockBody"
+      responses:
+        "200":
+          description: Shock injected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShockResult"
+
+  /grid/nodes/{nodeId}/repair:
+    post:
+      operationId: repairNode
+      tags: [grid]
+      summary: Repair a specific node
+      parameters:
+        - name: nodeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Repair initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NodeRepairResult"
+
+  /grid/summary:
+    get:
+      operationId: getGridSummary
+      tags: [grid]
+      summary: Get system health summary
+      description: Returns aggregated health metrics and statistics
+      responses:
+        "200":
+          description: Grid summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GridSummary"
+
+  /agents/stream:
+    get:
+      operationId: streamAgentLogs
+      tags: [agents]
+      summary: Stream agent reasoning logs (SSE)
+      description: Server-sent events stream of Sentinel and Engineer agent reasoning
+      responses:
+        "200":
+          description: SSE stream of agent log events
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /agents/logs:
+    get:
+      operationId: getAgentLogs
+      tags: [agents]
+      summary: Get recent agent log history
+      description: Returns the last N agent log entries
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Agent logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentLogsResponse"
+
+  /agents/trigger-scan:
+    post:
+      operationId: triggerSentinelScan
+      tags: [agents]
+      summary: Manually trigger a Sentinel scan
+      description: Forces the Sentinel to scan the grid and report findings
+      responses:
+        "200":
+          description: Scan triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +154,187 @@ components:
       required:
         - status
 
+    NodeStatus:
+      type: string
+      enum: [healthy, degraded, failing, repairing, offline]
+
+    GridNode:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/NodeStatus"
+        latency:
+          type: number
+          description: Latency in ms
+        errorRate:
+          type: number
+          description: Error rate 0-1
+        uptime:
+          type: number
+          description: Uptime percentage 0-100
+        lastUpdated:
+          type: string
+          format: date-time
+        assignedAgent:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - status
+        - latency
+        - errorRate
+        - uptime
+        - lastUpdated
+
+    GridState:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/GridNode"
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - nodes
+        - timestamp
+
+    InjectShockBody:
+      type: object
+      properties:
+        severity:
+          type: string
+          enum: [low, medium, high, catastrophic]
+          default: medium
+        targetNodeIds:
+          type: array
+          items:
+            type: string
+
+    ShockResult:
+      type: object
+      properties:
+        affectedNodes:
+          type: array
+          items:
+            type: string
+        severity:
+          type: string
+        message:
+          type: string
+      required:
+        - affectedNodes
+        - severity
+        - message
+
+    NodeRepairResult:
+      type: object
+      properties:
+        nodeId:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+      required:
+        - nodeId
+        - status
+        - message
+
+    GridSummary:
+      type: object
+      properties:
+        totalNodes:
+          type: integer
+        healthyNodes:
+          type: integer
+        degradedNodes:
+          type: integer
+        failingNodes:
+          type: integer
+        repairingNodes:
+          type: integer
+        offlineNodes:
+          type: integer
+        overallHealthPercent:
+          type: number
+        avgLatency:
+          type: number
+        activeIncidents:
+          type: integer
+      required:
+        - totalNodes
+        - healthyNodes
+        - degradedNodes
+        - failingNodes
+        - repairingNodes
+        - offlineNodes
+        - overallHealthPercent
+        - avgLatency
+        - activeIncidents
+
+    AgentLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        agent:
+          type: string
+          enum: [sentinel, engineer, system]
+        level:
+          type: string
+          enum: [info, warning, critical, action, success]
+        message:
+          type: string
+        nodeId:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+      required:
+        - id
+        - timestamp
+        - agent
+        - level
+        - message
+
+    AgentLogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentLogEntry"
+        total:
+          type: integer
+      required:
+        - logs
+        - total
+
+    ScanResult:
+      type: object
+      properties:
+        nodesScanned:
+          type: integer
+        issuesFound:
+          type: integer
+        actionsTriggered:
+          type: integer
+        summary:
+          type: string
+      required:
+        - nodesScanned
+        - issuesFound
+        - actionsTriggered
+        - summary

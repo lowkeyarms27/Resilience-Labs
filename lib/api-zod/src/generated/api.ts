@@ -14,3 +14,113 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Returns all nodes and their health status
+ * @summary Get current grid state
+ */
+export const GetGridStateResponse = zod.object({
+  nodes: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      status: zod.enum([
+        "healthy",
+        "degraded",
+        "failing",
+        "repairing",
+        "offline",
+      ]),
+      latency: zod.number().describe("Latency in ms"),
+      errorRate: zod.number().describe("Error rate 0-1"),
+      uptime: zod.number().describe("Uptime percentage 0-100"),
+      lastUpdated: zod.coerce.date(),
+      assignedAgent: zod.string().nullish(),
+    }),
+  ),
+  timestamp: zod.coerce.date(),
+});
+
+/**
+ * Randomly fails one or more nodes and triggers agent response
+ * @summary Inject a random system shock (God Mode)
+ */
+export const injectShockBodySeverityDefault = `medium`;
+
+export const InjectShockBody = zod.object({
+  severity: zod
+    .enum(["low", "medium", "high", "catastrophic"])
+    .default(injectShockBodySeverityDefault),
+  targetNodeIds: zod.array(zod.string()).optional(),
+});
+
+export const InjectShockResponse = zod.object({
+  affectedNodes: zod.array(zod.string()),
+  severity: zod.string(),
+  message: zod.string(),
+});
+
+/**
+ * @summary Repair a specific node
+ */
+export const RepairNodeParams = zod.object({
+  nodeId: zod.coerce.string(),
+});
+
+export const RepairNodeResponse = zod.object({
+  nodeId: zod.string(),
+  status: zod.string(),
+  message: zod.string(),
+});
+
+/**
+ * Returns aggregated health metrics and statistics
+ * @summary Get system health summary
+ */
+export const GetGridSummaryResponse = zod.object({
+  totalNodes: zod.number(),
+  healthyNodes: zod.number(),
+  degradedNodes: zod.number(),
+  failingNodes: zod.number(),
+  repairingNodes: zod.number(),
+  offlineNodes: zod.number(),
+  overallHealthPercent: zod.number(),
+  avgLatency: zod.number(),
+  activeIncidents: zod.number(),
+});
+
+/**
+ * Returns the last N agent log entries
+ * @summary Get recent agent log history
+ */
+export const getAgentLogsQueryLimitDefault = 50;
+
+export const GetAgentLogsQueryParams = zod.object({
+  limit: zod.coerce.number().default(getAgentLogsQueryLimitDefault),
+});
+
+export const GetAgentLogsResponse = zod.object({
+  logs: zod.array(
+    zod.object({
+      id: zod.string(),
+      timestamp: zod.coerce.date(),
+      agent: zod.enum(["sentinel", "engineer", "system"]),
+      level: zod.enum(["info", "warning", "critical", "action", "success"]),
+      message: zod.string(),
+      nodeId: zod.string().nullish(),
+      metadata: zod.record(zod.string(), zod.unknown()).nullish(),
+    }),
+  ),
+  total: zod.number(),
+});
+
+/**
+ * Forces the Sentinel to scan the grid and report findings
+ * @summary Manually trigger a Sentinel scan
+ */
+export const TriggerSentinelScanResponse = zod.object({
+  nodesScanned: zod.number(),
+  issuesFound: zod.number(),
+  actionsTriggered: zod.number(),
+  summary: zod.string(),
+});

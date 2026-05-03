@@ -8,3 +8,119 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type NodeStatus = (typeof NodeStatus)[keyof typeof NodeStatus];
+
+export const NodeStatus = {
+  healthy: "healthy",
+  degraded: "degraded",
+  failing: "failing",
+  repairing: "repairing",
+  offline: "offline",
+} as const;
+
+export interface GridNode {
+  id: string;
+  name: string;
+  status: NodeStatus;
+  /** Latency in ms */
+  latency: number;
+  /** Error rate 0-1 */
+  errorRate: number;
+  /** Uptime percentage 0-100 */
+  uptime: number;
+  lastUpdated: string;
+  assignedAgent?: string | null;
+}
+
+export interface GridState {
+  nodes: GridNode[];
+  timestamp: string;
+}
+
+export type InjectShockBodySeverity =
+  (typeof InjectShockBodySeverity)[keyof typeof InjectShockBodySeverity];
+
+export const InjectShockBodySeverity = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  catastrophic: "catastrophic",
+} as const;
+
+export interface InjectShockBody {
+  severity?: InjectShockBodySeverity;
+  targetNodeIds?: string[];
+}
+
+export interface ShockResult {
+  affectedNodes: string[];
+  severity: string;
+  message: string;
+}
+
+export interface NodeRepairResult {
+  nodeId: string;
+  status: string;
+  message: string;
+}
+
+export interface GridSummary {
+  totalNodes: number;
+  healthyNodes: number;
+  degradedNodes: number;
+  failingNodes: number;
+  repairingNodes: number;
+  offlineNodes: number;
+  overallHealthPercent: number;
+  avgLatency: number;
+  activeIncidents: number;
+}
+
+export type AgentLogEntryAgent =
+  (typeof AgentLogEntryAgent)[keyof typeof AgentLogEntryAgent];
+
+export const AgentLogEntryAgent = {
+  sentinel: "sentinel",
+  engineer: "engineer",
+  system: "system",
+} as const;
+
+export type AgentLogEntryLevel =
+  (typeof AgentLogEntryLevel)[keyof typeof AgentLogEntryLevel];
+
+export const AgentLogEntryLevel = {
+  info: "info",
+  warning: "warning",
+  critical: "critical",
+  action: "action",
+  success: "success",
+} as const;
+
+export type AgentLogEntryMetadata = { [key: string]: unknown } | null;
+
+export interface AgentLogEntry {
+  id: string;
+  timestamp: string;
+  agent: AgentLogEntryAgent;
+  level: AgentLogEntryLevel;
+  message: string;
+  nodeId?: string | null;
+  metadata?: AgentLogEntryMetadata;
+}
+
+export interface AgentLogsResponse {
+  logs: AgentLogEntry[];
+  total: number;
+}
+
+export interface ScanResult {
+  nodesScanned: number;
+  issuesFound: number;
+  actionsTriggered: number;
+  summary: string;
+}
+
+export type GetAgentLogsParams = {
+  limit?: number;
+};

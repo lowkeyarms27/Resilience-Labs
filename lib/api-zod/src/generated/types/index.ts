@@ -6,4 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./agentLogEntry";
+export * from "./agentLogEntryAgent";
+export * from "./agentLogEntryLevel";
+export * from "./agentLogEntryMetadata";
+export * from "./agentLogsResponse";
+export * from "./getAgentLogsParams";
+export * from "./gridNode";
+export * from "./gridState";
+export * from "./gridSummary";
 export * from "./healthStatus";
+export * from "./injectShockBody";
+export * from "./injectShockBodySeverity";
+export * from "./nodeRepairResult";
+export * from "./nodeStatus";
+export * from "./scanResult";
+export * from "./shockResult";

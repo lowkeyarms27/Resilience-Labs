@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { seedGrid } from "./lib/seedGrid";
 
 const app: Express = express();
 
@@ -30,5 +31,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+// Seed on startup
+seedGrid().catch((err) => logger.error({ err }, "Failed to seed grid"));
 
 export default app;

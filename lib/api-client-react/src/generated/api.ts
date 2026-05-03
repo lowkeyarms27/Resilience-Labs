@@ -5,18 +5,31 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AgentLogsResponse,
+  GetAgentLogsParams,
+  GridState,
+  GridSummary,
+  HealthStatus,
+  InjectShockBody,
+  NodeRepairResult,
+  ScanResult,
+  ShockResult,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -99,3 +112,579 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Returns all nodes and their health status
+ * @summary Get current grid state
+ */
+export const getGetGridStateUrl = () => {
+  return `/api/grid/state`;
+};
+
+export const getGridState = async (
+  options?: RequestInit,
+): Promise<GridState> => {
+  return customFetch<GridState>(getGetGridStateUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGridStateQueryKey = () => {
+  return [`/api/grid/state`] as const;
+};
+
+export const getGetGridStateQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGridState>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGridState>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGridStateQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGridState>>> = ({
+    signal,
+  }) => getGridState({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGridState>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGridStateQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGridState>>
+>;
+export type GetGridStateQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get current grid state
+ */
+
+export function useGetGridState<
+  TData = Awaited<ReturnType<typeof getGridState>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGridState>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGridStateQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Randomly fails one or more nodes and triggers agent response
+ * @summary Inject a random system shock (God Mode)
+ */
+export const getInjectShockUrl = () => {
+  return `/api/grid/inject-shock`;
+};
+
+export const injectShock = async (
+  injectShockBody?: InjectShockBody,
+  options?: RequestInit,
+): Promise<ShockResult> => {
+  return customFetch<ShockResult>(getInjectShockUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(injectShockBody),
+  });
+};
+
+export const getInjectShockMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof injectShock>>,
+    TError,
+    { data: BodyType<InjectShockBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof injectShock>>,
+  TError,
+  { data: BodyType<InjectShockBody> },
+  TContext
+> => {
+  const mutationKey = ["injectShock"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof injectShock>>,
+    { data: BodyType<InjectShockBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return injectShock(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type InjectShockMutationResult = NonNullable<
+  Awaited<ReturnType<typeof injectShock>>
+>;
+export type InjectShockMutationBody = BodyType<InjectShockBody>;
+export type InjectShockMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Inject a random system shock (God Mode)
+ */
+export const useInjectShock = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof injectShock>>,
+    TError,
+    { data: BodyType<InjectShockBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof injectShock>>,
+  TError,
+  { data: BodyType<InjectShockBody> },
+  TContext
+> => {
+  return useMutation(getInjectShockMutationOptions(options));
+};
+
+/**
+ * @summary Repair a specific node
+ */
+export const getRepairNodeUrl = (nodeId: string) => {
+  return `/api/grid/nodes/${nodeId}/repair`;
+};
+
+export const repairNode = async (
+  nodeId: string,
+  options?: RequestInit,
+): Promise<NodeRepairResult> => {
+  return customFetch<NodeRepairResult>(getRepairNodeUrl(nodeId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRepairNodeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof repairNode>>,
+    TError,
+    { nodeId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof repairNode>>,
+  TError,
+  { nodeId: string },
+  TContext
+> => {
+  const mutationKey = ["repairNode"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof repairNode>>,
+    { nodeId: string }
+  > = (props) => {
+    const { nodeId } = props ?? {};
+
+    return repairNode(nodeId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RepairNodeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof repairNode>>
+>;
+
+export type RepairNodeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Repair a specific node
+ */
+export const useRepairNode = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof repairNode>>,
+    TError,
+    { nodeId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof repairNode>>,
+  TError,
+  { nodeId: string },
+  TContext
+> => {
+  return useMutation(getRepairNodeMutationOptions(options));
+};
+
+/**
+ * Returns aggregated health metrics and statistics
+ * @summary Get system health summary
+ */
+export const getGetGridSummaryUrl = () => {
+  return `/api/grid/summary`;
+};
+
+export const getGridSummary = async (
+  options?: RequestInit,
+): Promise<GridSummary> => {
+  return customFetch<GridSummary>(getGetGridSummaryUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGridSummaryQueryKey = () => {
+  return [`/api/grid/summary`] as const;
+};
+
+export const getGetGridSummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGridSummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGridSummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGridSummaryQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGridSummary>>> = ({
+    signal,
+  }) => getGridSummary({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGridSummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGridSummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGridSummary>>
+>;
+export type GetGridSummaryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get system health summary
+ */
+
+export function useGetGridSummary<
+  TData = Awaited<ReturnType<typeof getGridSummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGridSummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGridSummaryQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Server-sent events stream of Sentinel and Engineer agent reasoning
+ * @summary Stream agent reasoning logs (SSE)
+ */
+export const getStreamAgentLogsUrl = () => {
+  return `/api/agents/stream`;
+};
+
+export const streamAgentLogs = async (
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getStreamAgentLogsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getStreamAgentLogsQueryKey = () => {
+  return [`/api/agents/stream`] as const;
+};
+
+export const getStreamAgentLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof streamAgentLogs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof streamAgentLogs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getStreamAgentLogsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof streamAgentLogs>>> = ({
+    signal,
+  }) => streamAgentLogs({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof streamAgentLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type StreamAgentLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof streamAgentLogs>>
+>;
+export type StreamAgentLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Stream agent reasoning logs (SSE)
+ */
+
+export function useStreamAgentLogs<
+  TData = Awaited<ReturnType<typeof streamAgentLogs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof streamAgentLogs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getStreamAgentLogsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns the last N agent log entries
+ * @summary Get recent agent log history
+ */
+export const getGetAgentLogsUrl = (params?: GetAgentLogsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/agents/logs?${stringifiedParams}`
+    : `/api/agents/logs`;
+};
+
+export const getAgentLogs = async (
+  params?: GetAgentLogsParams,
+  options?: RequestInit,
+): Promise<AgentLogsResponse> => {
+  return customFetch<AgentLogsResponse>(getGetAgentLogsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAgentLogsQueryKey = (params?: GetAgentLogsParams) => {
+  return [`/api/agents/logs`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAgentLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAgentLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAgentLogsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAgentLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAgentLogsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgentLogs>>> = ({
+    signal,
+  }) => getAgentLogs(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAgentLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAgentLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAgentLogs>>
+>;
+export type GetAgentLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent agent log history
+ */
+
+export function useGetAgentLogs<
+  TData = Awaited<ReturnType<typeof getAgentLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAgentLogsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAgentLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAgentLogsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Forces the Sentinel to scan the grid and report findings
+ * @summary Manually trigger a Sentinel scan
+ */
+export const getTriggerSentinelScanUrl = () => {
+  return `/api/agents/trigger-scan`;
+};
+
+export const triggerSentinelScan = async (
+  options?: RequestInit,
+): Promise<ScanResult> => {
+  return customFetch<ScanResult>(getTriggerSentinelScanUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getTriggerSentinelScanMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof triggerSentinelScan>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof triggerSentinelScan>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["triggerSentinelScan"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof triggerSentinelScan>>,
+    void
+  > = () => {
+    return triggerSentinelScan(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TriggerSentinelScanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof triggerSentinelScan>>
+>;
+
+export type TriggerSentinelScanMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Manually trigger a Sentinel scan
+ */
+export const useTriggerSentinelScan = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof triggerSentinelScan>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof triggerSentinelScan>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getTriggerSentinelScanMutationOptions(options));
+};
