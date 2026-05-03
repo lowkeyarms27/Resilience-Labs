@@ -12,6 +12,12 @@ uri = "file://attached_assets/generated_images/resilience-lab-cover-titled.png"
 type = "image"
 title = "resilience lab titled cover"
 
+[[generated]]
+id = "pmTy5k0bqDyozcv4VbrTD"
+uri = "file://attached_assets/generated_images/resilience-lab-cover-final.png"
+type = "image"
+title = "resilience lab final cover"
+
 [[outputs]]
 id = "d7ipsBzgTgTwYGYGxi0Pd"
 uri = "file://attached_assets/generated_images/resilience-lab-cover.png"
@@ -23,3 +29,9 @@ id = "p7tlUFaMght4gOL8Pxa-g"
 uri = "file://attached_assets/generated_images/resilience-lab-cover-titled.png"
 type = "image"
 title = "Resilience Lab — Cover Image with Title"
+
+[[outputs]]
+id = "m9XlBFVpfdXVlDdiBFb6V"
+uri = "file://attached_assets/generated_images/resilience-lab-cover-final.png"
+type = "image"
+title = "Resilience Lab — Final Cover Image"
