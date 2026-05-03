@@ -1,86 +1,114 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAgentLogs } from "@/hooks/use-agent-logs";
 import { formatRelativeTime, cn } from "@/lib/date-utils";
 import { Terminal, Shield, Wrench, Cpu, AlertTriangle, AlertCircle, Info, CheckCircle, ArrowRight } from "lucide-react";
 
-const agentColors = {
-  sentinel: "text-cyan-400 border-cyan-400/20 bg-cyan-400/5",
-  engineer: "text-amber-500 border-amber-500/20 bg-amber-500/5",
-  system: "text-fuchsia-400 border-fuchsia-400/20 bg-fuchsia-400/5"
+const agentMeta: Record<string, { color: string; border: string; label: string }> = {
+  sentinel: { color: "text-cyan-400", border: "border-l-cyan-400 bg-cyan-400/5 border-cyan-400/15", label: "SENTINEL" },
+  engineer: { color: "text-amber-400", border: "border-l-amber-400 bg-amber-400/5 border-amber-400/15", label: "ENGINEER" },
+  system:   { color: "text-fuchsia-400", border: "border-l-fuchsia-400 bg-fuchsia-400/5 border-fuchsia-400/15", label: "SYSTEM" },
 };
 
-const levelIcons = {
-  info: <Info className="w-3 h-3" />,
-  warning: <AlertTriangle className="w-3 h-3 text-yellow-400" />,
-  critical: <AlertCircle className="w-3 h-3 text-red-500 pulse-red" />,
-  action: <ArrowRight className="w-3 h-3 text-blue-400" />,
-  success: <CheckCircle className="w-3 h-3 text-green-400" />
+const levelConfig: Record<string, { icon: React.ReactNode; cls: string }> = {
+  info:     { icon: <Info className="w-3 h-3" />,     cls: "text-muted-foreground" },
+  warning:  { icon: <AlertTriangle className="w-3 h-3" />,   cls: "text-amber-400" },
+  critical: { icon: <AlertCircle className="w-3 h-3" />,    cls: "text-red-400" },
+  action:   { icon: <ArrowRight className="w-3 h-3" />,     cls: "text-blue-400" },
+  success:  { icon: <CheckCircle className="w-3 h-3" />,    cls: "text-green-400" },
 };
 
 export function AgentLogs() {
   const logs = useAgentLogs();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const prevLenRef = useRef(0);
 
-  // Auto scroll to bottom
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const timer = setTimeout(() => setIsConnected(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (logs.length > prevLenRef.current && scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
     }
-  }, [logs]);
+    prevLenRef.current = logs.length;
+  }, [logs.length]);
+
+  const sorted = [...logs].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 
   return (
-    <div className="w-96 border-l border-border bg-card/80 backdrop-blur-sm flex flex-col h-[calc(100vh-4rem)]">
-      <div className="p-4 border-b border-border bg-card/50 flex items-center justify-between">
+    <div className="w-96 border-l border-border bg-card/80 backdrop-blur-sm flex flex-col h-[calc(100vh-4rem)] shrink-0">
+      <div className="px-4 py-3 border-b border-border bg-card/60 flex items-center justify-between shrink-0">
         <h2 className="font-mono font-bold tracking-wider flex items-center gap-2 text-sm">
           <Terminal className="w-4 h-4 text-primary" />
           AGENT LOGS
         </h2>
+        <div className="flex items-center gap-2 text-[10px] font-mono">
+          <span className={cn(
+            "w-2 h-2 rounded-full shrink-0",
+            isConnected ? "bg-green-400 blink" : "bg-gray-600"
+          )} />
+          <span className={isConnected ? "text-green-400" : "text-muted-foreground"}>
+            {isConnected ? "LIVE" : "CONNECTING"}
+          </span>
+          {logs.length > 0 && (
+            <span className="text-muted-foreground ml-1">· {logs.length}</span>
+          )}
+        </div>
       </div>
 
-      <div 
+      <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 font-mono text-xs"
+        className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 font-mono text-xs"
       >
-        {logs.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-muted-foreground flex-col gap-2 opacity-50">
+        {sorted.length === 0 ? (
+          <div className="h-full flex items-center justify-center text-muted-foreground flex-col gap-2 opacity-40">
             <Terminal className="w-8 h-8 pulse-blue" />
-            <p>Awaiting agent transmissions...</p>
+            <p className="text-xs tracking-wider">AWAITING TRANSMISSIONS</p>
           </div>
         ) : (
-          [...logs].reverse().map(log => (
-            <div 
-              key={log.id} 
-              className={cn(
-                "p-3 rounded border flex flex-col gap-2 transition-all",
-                agentColors[log.agent]
-              )}
-            >
-              <div className="flex items-center justify-between opacity-80">
-                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[10px]">
-                  {log.agent === 'sentinel' && <Shield className="w-3 h-3" />}
-                  {log.agent === 'engineer' && <Wrench className="w-3 h-3" />}
-                  {log.agent === 'system' && <Cpu className="w-3 h-3" />}
-                  {log.agent}
+          sorted.map((log, idx) => {
+            const meta = agentMeta[log.agent] ?? agentMeta.system;
+            const lvl = levelConfig[log.level] ?? levelConfig.info;
+            return (
+              <div
+                key={`${log.id}-${idx}`}
+                className={cn(
+                  "rounded-r border border-l-2 p-3 flex flex-col gap-1.5 transition-all log-entry-in",
+                  meta.border
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className={cn("flex items-center gap-1.5 font-bold text-[10px] tracking-widest", meta.color)}>
+                    {log.agent === "sentinel" && <Shield className="w-3 h-3" />}
+                    {log.agent === "engineer" && <Wrench className="w-3 h-3" />}
+                    {log.agent === "system"   && <Cpu className="w-3 h-3" />}
+                    {meta.label}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground/60">
+                    {formatRelativeTime(log.timestamp)}
+                  </span>
                 </div>
-                <span className="text-[10px] opacity-60">
-                  {formatRelativeTime(log.timestamp)}
-                </span>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <div className="mt-0.5 opacity-80">{levelIcons[log.level]}</div>
-                <p className="leading-relaxed opacity-90 break-words flex-1">
-                  {log.message}
-                </p>
-              </div>
 
-              {log.nodeId && (
-                <div className="text-[10px] opacity-50 flex items-center gap-1 mt-1 border-t border-current/10 pt-1">
-                  TARGET: {log.nodeId.substring(0, 8)}...
+                <div className={cn("flex items-start gap-2", lvl.cls)}>
+                  <span className="mt-0.5 shrink-0 opacity-80">{lvl.icon}</span>
+                  <p className="leading-relaxed text-foreground/85 break-words flex-1 text-[11px]">
+                    {log.message}
+                  </p>
                 </div>
-              )}
-            </div>
-          ))
+
+                {log.nodeId && (
+                  <div className="text-[10px] text-muted-foreground/50 flex items-center gap-1 mt-0.5 pt-1.5 border-t border-current/10">
+                    <span className="opacity-60">TARGET</span>
+                    <span className="font-bold">{log.nodeId.toUpperCase()}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </div>

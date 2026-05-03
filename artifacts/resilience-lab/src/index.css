@@ -73,7 +73,7 @@
   --elevate-1: rgba(255,255,255, .03);
   --elevate-2: rgba(255,255,255, .08);
 
-  --background: 225 50% 8%; /* #0a0f1e */
+  --background: 225 50% 8%;
   --foreground: 210 40% 98%;
   --border: 225 30% 15%;
   --card: 225 45% 10%;
@@ -90,7 +90,7 @@
   --popover: 225 45% 10%;
   --popover-foreground: 210 40% 98%;
   --popover-border: 225 30% 15%;
-  --primary: 200 100% 50%; /* Electric cyan */
+  --primary: 200 100% 50%;
   --primary-foreground: 225 50% 8%;
   --secondary: 225 30% 15%;
   --secondary-foreground: 210 40% 98%;
@@ -142,17 +142,17 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* Cyberpunk grid background */
-    background-image: linear-gradient(rgba(0, 170, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 170, 255, 0.05) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(0, 170, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 170, 255, 0.04) 1px, transparent 1px);
     background-size: 40px 40px;
     background-attachment: fixed;
   }
 }
 
 @layer utilities {
+  /* ── Pulse animations ─────────────────────────────────── */
   .pulse-red {
-    animation: pulse-red 2s infinite;
+    animation: pulse-red 1.5s infinite;
   }
   .pulse-blue {
     animation: pulse-blue 2s infinite;
@@ -160,38 +160,86 @@
   .pulse-green {
     animation: pulse-green 3s infinite;
   }
-  
+
   @keyframes pulse-red {
-    0% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.4); border-color: rgba(255, 51, 51, 0.8); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 51, 51, 0); border-color: rgba(255, 51, 51, 0.3); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0); border-color: rgba(255, 51, 51, 0.8); }
+    0%   { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.6), 0 0 20px rgba(255, 51, 51, 0.2); border-color: rgba(255, 51, 51, 0.9); }
+    50%  { box-shadow: 0 0 0 8px rgba(255, 51, 51, 0), 0 0 30px rgba(255, 51, 51, 0.4); border-color: rgba(255, 51, 51, 0.5); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0), 0 0 20px rgba(255, 51, 51, 0.2); border-color: rgba(255, 51, 51, 0.9); }
   }
-  
+
   @keyframes pulse-blue {
-    0% { box-shadow: 0 0 0 0 rgba(0, 170, 255, 0.4); border-color: rgba(0, 170, 255, 0.8); }
-    70% { box-shadow: 0 0 0 10px rgba(0, 170, 255, 0); border-color: rgba(0, 170, 255, 0.3); }
+    0%   { box-shadow: 0 0 0 0 rgba(0, 170, 255, 0.4); border-color: rgba(0, 170, 255, 0.8); }
+    70%  { box-shadow: 0 0 0 10px rgba(0, 170, 255, 0); border-color: rgba(0, 170, 255, 0.3); }
     100% { box-shadow: 0 0 0 0 rgba(0, 170, 255, 0); border-color: rgba(0, 170, 255, 0.8); }
   }
 
   @keyframes pulse-green {
-    0% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.2) inset; }
-    50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.4) inset; }
-    100% { box-shadow: 0 0 10px rgba(0, 255, 136, 0.2) inset; }
+    0%   { box-shadow: 0 0 8px rgba(0, 255, 136, 0.15) inset; }
+    50%  { box-shadow: 0 0 22px rgba(0, 255, 136, 0.35) inset; }
+    100% { box-shadow: 0 0 8px rgba(0, 255, 136, 0.15) inset; }
   }
-  
+
+  /* ── Repairing sweep ──────────────────────────────────── */
+  .sweep-blue {
+    position: relative;
+    overflow: hidden;
+  }
+  .sweep-blue::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(0, 170, 255, 0.15) 50%, transparent 70%);
+    animation: sweep 1.8s linear infinite;
+  }
+  @keyframes sweep {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  /* ── Scanline ─────────────────────────────────────────── */
   .scanline {
     width: 100%;
-    height: 100px;
+    height: 120px;
     z-index: 9999;
     position: absolute;
     pointer-events: none;
-    background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,170,255,0.1) 50%, rgba(0,0,0,0) 100%);
-    opacity: 0.1;
-    animation: scanline 8s linear infinite;
+    background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,170,255,0.07) 50%, rgba(0,0,0,0) 100%);
+    animation: scanline 10s linear infinite;
   }
-  
   @keyframes scanline {
-    0% { transform: translateY(-100vh); }
+    0%   { transform: translateY(-120px); }
     100% { transform: translateY(100vh); }
+  }
+
+  /* ── Blink for LIVE dot ───────────────────────────────── */
+  .blink {
+    animation: blink 1.2s step-start infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  /* ── Incident flash overlay on entire page ────────────── */
+  .incident-flash {
+    animation: incident-flash 3s ease-in-out infinite;
+  }
+  @keyframes incident-flash {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.7; }
+  }
+
+  /* ── Fade-in for new log entries ──────────────────────── */
+  .log-entry-in {
+    animation: log-entry-in 0.3s ease-out;
+  }
+  @keyframes log-entry-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Latency bar fill ─────────────────────────────────── */
+  .latency-bar-fill {
+    transition: width 0.6s ease-out;
   }
 }
