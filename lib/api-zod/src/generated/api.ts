@@ -34,6 +34,10 @@ export const GetGridStateResponse = zod.object({
       latency: zod.number().describe("Latency in ms"),
       errorRate: zod.number().describe("Error rate 0-1"),
       uptime: zod.number().describe("Uptime percentage 0-100"),
+      cpu: zod.number().describe("CPU utilization 0-100%"),
+      memory: zod.number().describe("Memory utilization 0-100%"),
+      networkIn: zod.number().describe("Network ingress in Mbps"),
+      networkOut: zod.number().describe("Network egress in Mbps"),
       lastUpdated: zod.coerce.date(),
       assignedAgent: zod.string().nullish(),
     }),
@@ -104,8 +108,23 @@ export const GetAgentLogsResponse = zod.object({
     zod.object({
       id: zod.string(),
       timestamp: zod.coerce.date(),
-      agent: zod.enum(["sentinel", "engineer", "system"]),
-      level: zod.enum(["info", "warning", "critical", "action", "success"]),
+      agent: zod.enum([
+        "sentinel",
+        "coordinator",
+        "diagnostician",
+        "remediator",
+        "validator",
+        "engineer",
+        "system",
+      ]),
+      level: zod.enum([
+        "info",
+        "warning",
+        "critical",
+        "action",
+        "success",
+        "report",
+      ]),
       message: zod.string(),
       nodeId: zod.string().nullish(),
       metadata: zod.record(zod.string(), zod.unknown()).nullish(),
@@ -123,4 +142,48 @@ export const TriggerSentinelScanResponse = zod.object({
   issuesFound: zod.number(),
   actionsTriggered: zod.number(),
   summary: zod.string(),
+});
+
+/**
+ * @summary List pending human approval requests
+ */
+export const ListApprovalsResponse = zod.object({
+  approvals: zod.array(
+    zod.object({
+      id: zod.string(),
+      nodeId: zod.string(),
+      nodeName: zod.string(),
+      action: zod.string(),
+      infraCommands: zod.array(zod.string()),
+      justification: zod.string(),
+      confidence: zod.number(),
+      riskLevel: zod.enum(["low", "medium", "high"]),
+      requestedBy: zod.string(),
+      timestamp: zod.coerce.date(),
+    }),
+  ),
+});
+
+/**
+ * @summary Approve a pending remediation action
+ */
+export const ApproveActionParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const ApproveActionResponse = zod.object({
+  approved: zod.boolean(),
+  id: zod.string(),
+});
+
+/**
+ * @summary Reject a pending remediation action
+ */
+export const RejectActionParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const RejectActionResponse = zod.object({
+  approved: zod.boolean(),
+  id: zod.string(),
 });

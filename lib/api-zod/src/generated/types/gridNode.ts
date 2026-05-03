@@ -17,6 +17,14 @@ export interface GridNode {
   errorRate: number;
   /** Uptime percentage 0-100 */
   uptime: number;
+  /** CPU utilization 0-100% */
+  cpu: number;
+  /** Memory utilization 0-100% */
+  memory: number;
+  /** Network ingress in Mbps */
+  networkIn: number;
+  /** Network egress in Mbps */
+  networkOut: number;
   lastUpdated: Date;
   assignedAgent?: string | null;
 }

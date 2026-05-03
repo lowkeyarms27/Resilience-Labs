@@ -10,6 +10,10 @@ import { z } from "zod/v4";
 
 export const agentEnum = pgEnum("agent_type", [
   "sentinel",
+  "coordinator",
+  "diagnostician",
+  "remediator",
+  "validator",
   "engineer",
   "system",
 ]);
@@ -20,6 +24,7 @@ export const logLevelEnum = pgEnum("log_level", [
   "critical",
   "action",
   "success",
+  "report",
 ]);
 
 export const agentLogsTable = pgTable("agent_logs", {

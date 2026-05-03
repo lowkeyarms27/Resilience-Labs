@@ -101,7 +101,7 @@ paths:
       operationId: streamAgentLogs
       tags: [agents]
       summary: Stream agent reasoning logs (SSE)
-      description: Server-sent events stream of Sentinel and Engineer agent reasoning
+      description: Server-sent events stream of all agent reasoning and approvals
       responses:
         "200":
           description: SSE stream of agent log events
@@ -144,6 +144,57 @@ paths:
               schema:
                 $ref: "#/components/schemas/ScanResult"
 
+  /agents/approvals:
+    get:
+      operationId: listApprovals
+      tags: [agents]
+      summary: List pending human approval requests
+      responses:
+        "200":
+          description: Pending approvals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalsResponse"
+
+  /agents/approvals/{id}/approve:
+    post:
+      operationId: approveAction
+      tags: [agents]
+      summary: Approve a pending remediation action
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalDecision"
+
+  /agents/approvals/{id}/reject:
+    post:
+      operationId: rejectAction
+      tags: [agents]
+      summary: Reject a pending remediation action
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalDecision"
+
 components:
   schemas:
     HealthStatus:
@@ -176,6 +227,18 @@ components:
         uptime:
           type: number
           description: Uptime percentage 0-100
+        cpu:
+          type: number
+          description: CPU utilization 0-100%
+        memory:
+          type: number
+          description: Memory utilization 0-100%
+        networkIn:
+          type: number
+          description: Network ingress in Mbps
+        networkOut:
+          type: number
+          description: Network egress in Mbps
         lastUpdated:
           type: string
           format: date-time
@@ -189,6 +252,10 @@ components:
         - latency
         - errorRate
         - uptime
+        - cpu
+        - memory
+        - networkIn
+        - networkOut
         - lastUpdated
 
     GridState:
@@ -289,10 +356,10 @@ components:
           format: date-time
         agent:
           type: string
-          enum: [sentinel, engineer, system]
+          enum: [sentinel, coordinator, diagnostician, remediator, validator, engineer, system]
         level:
           type: string
-          enum: [info, warning, critical, action, success]
+          enum: [info, warning, critical, action, success, report]
         message:
           type: string
         nodeId:
@@ -338,3 +405,63 @@ components:
         - issuesFound
         - actionsTriggered
         - summary
+
+    ApprovalRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        nodeId:
+          type: string
+        nodeName:
+          type: string
+        action:
+          type: string
+        infraCommands:
+          type: array
+          items:
+            type: string
+        justification:
+          type: string
+        confidence:
+          type: number
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+        requestedBy:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - id
+        - nodeId
+        - nodeName
+        - action
+        - infraCommands
+        - justification
+        - confidence
+        - riskLevel
+        - requestedBy
+        - timestamp
+
+    ApprovalsResponse:
+      type: object
+      properties:
+        approvals:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApprovalRequest"
+      required:
+        - approvals
+
+    ApprovalDecision:
+      type: object
+      properties:
+        approved:
+          type: boolean
+        id:
+          type: string
+      required:
+        - approved
+        - id

@@ -15,4 +15,5 @@ export const AgentLogEntryLevel = {
   critical: "critical",
   action: "action",
   success: "success",
+  report: "report",
 } as const;

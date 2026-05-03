@@ -29,6 +29,14 @@ export interface GridNode {
   errorRate: number;
   /** Uptime percentage 0-100 */
   uptime: number;
+  /** CPU utilization 0-100% */
+  cpu: number;
+  /** Memory utilization 0-100% */
+  memory: number;
+  /** Network ingress in Mbps */
+  networkIn: number;
+  /** Network egress in Mbps */
+  networkOut: number;
   lastUpdated: string;
   assignedAgent?: string | null;
 }
@@ -82,6 +90,10 @@ export type AgentLogEntryAgent =
 
 export const AgentLogEntryAgent = {
   sentinel: "sentinel",
+  coordinator: "coordinator",
+  diagnostician: "diagnostician",
+  remediator: "remediator",
+  validator: "validator",
   engineer: "engineer",
   system: "system",
 } as const;
@@ -95,6 +107,7 @@ export const AgentLogEntryLevel = {
   critical: "critical",
   action: "action",
   success: "success",
+  report: "report",
 } as const;
 
 export type AgentLogEntryMetadata = { [key: string]: unknown } | null;
@@ -119,6 +132,37 @@ export interface ScanResult {
   issuesFound: number;
   actionsTriggered: number;
   summary: string;
+}
+
+export type ApprovalRequestRiskLevel =
+  (typeof ApprovalRequestRiskLevel)[keyof typeof ApprovalRequestRiskLevel];
+
+export const ApprovalRequestRiskLevel = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+} as const;
+
+export interface ApprovalRequest {
+  id: string;
+  nodeId: string;
+  nodeName: string;
+  action: string;
+  infraCommands: string[];
+  justification: string;
+  confidence: number;
+  riskLevel: ApprovalRequestRiskLevel;
+  requestedBy: string;
+  timestamp: string;
+}
+
+export interface ApprovalsResponse {
+  approvals: ApprovalRequest[];
+}
+
+export interface ApprovalDecision {
+  approved: boolean;
+  id: string;
 }
 
 export type GetAgentLogsParams = {

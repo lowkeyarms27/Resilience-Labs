@@ -11,6 +11,10 @@ export type AgentLogEntryAgent =
 
 export const AgentLogEntryAgent = {
   sentinel: "sentinel",
+  coordinator: "coordinator",
+  diagnostician: "diagnostician",
+  remediator: "remediator",
+  validator: "validator",
   engineer: "engineer",
   system: "system",
 } as const;

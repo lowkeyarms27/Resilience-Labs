@@ -18,6 +18,8 @@ import type {
 
 import type {
   AgentLogsResponse,
+  ApprovalDecision,
+  ApprovalsResponse,
   GetAgentLogsParams,
   GridState,
   GridSummary,
@@ -437,7 +439,7 @@ export function useGetGridSummary<
 }
 
 /**
- * Server-sent events stream of Sentinel and Engineer agent reasoning
+ * Server-sent events stream of all agent reasoning and approvals
  * @summary Stream agent reasoning logs (SSE)
  */
 export const getStreamAgentLogsUrl = () => {
@@ -687,4 +689,247 @@ export const useTriggerSentinelScan = <
   TContext
 > => {
   return useMutation(getTriggerSentinelScanMutationOptions(options));
+};
+
+/**
+ * @summary List pending human approval requests
+ */
+export const getListApprovalsUrl = () => {
+  return `/api/agents/approvals`;
+};
+
+export const listApprovals = async (
+  options?: RequestInit,
+): Promise<ApprovalsResponse> => {
+  return customFetch<ApprovalsResponse>(getListApprovalsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListApprovalsQueryKey = () => {
+  return [`/api/agents/approvals`] as const;
+};
+
+export const getListApprovalsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listApprovals>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listApprovals>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListApprovalsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listApprovals>>> = ({
+    signal,
+  }) => listApprovals({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listApprovals>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListApprovalsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listApprovals>>
+>;
+export type ListApprovalsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List pending human approval requests
+ */
+
+export function useListApprovals<
+  TData = Awaited<ReturnType<typeof listApprovals>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listApprovals>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListApprovalsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve a pending remediation action
+ */
+export const getApproveActionUrl = (id: string) => {
+  return `/api/agents/approvals/${id}/approve`;
+};
+
+export const approveAction = async (
+  id: string,
+  options?: RequestInit,
+): Promise<ApprovalDecision> => {
+  return customFetch<ApprovalDecision>(getApproveActionUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getApproveActionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveAction>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof approveAction>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["approveAction"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof approveAction>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return approveAction(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ApproveActionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof approveAction>>
+>;
+
+export type ApproveActionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Approve a pending remediation action
+ */
+export const useApproveAction = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof approveAction>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof approveAction>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getApproveActionMutationOptions(options));
+};
+
+/**
+ * @summary Reject a pending remediation action
+ */
+export const getRejectActionUrl = (id: string) => {
+  return `/api/agents/approvals/${id}/reject`;
+};
+
+export const rejectAction = async (
+  id: string,
+  options?: RequestInit,
+): Promise<ApprovalDecision> => {
+  return customFetch<ApprovalDecision>(getRejectActionUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRejectActionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectAction>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof rejectAction>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["rejectAction"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof rejectAction>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return rejectAction(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RejectActionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof rejectAction>>
+>;
+
+export type RejectActionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reject a pending remediation action
+ */
+export const useRejectAction = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rejectAction>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof rejectAction>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getRejectActionMutationOptions(options));
 };
