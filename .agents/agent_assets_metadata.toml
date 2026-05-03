@@ -6,8 +6,20 @@ uri = "file://attached_assets/generated_images/resilience-lab-cover.png"
 type = "image"
 title = "resilience lab cover"
 
+[[generated]]
+id = "xlGmjQNN7uXNt94fNwZBV"
+uri = "file://attached_assets/generated_images/resilience-lab-cover-titled.png"
+type = "image"
+title = "resilience lab titled cover"
+
 [[outputs]]
 id = "d7ipsBzgTgTwYGYGxi0Pd"
 uri = "file://attached_assets/generated_images/resilience-lab-cover.png"
 type = "image"
 title = "Resilience Lab — Project Cover Image"
+
+[[outputs]]
+id = "p7tlUFaMght4gOL8Pxa-g"
+uri = "file://attached_assets/generated_images/resilience-lab-cover-titled.png"
+type = "image"
+title = "Resilience Lab — Cover Image with Title"
