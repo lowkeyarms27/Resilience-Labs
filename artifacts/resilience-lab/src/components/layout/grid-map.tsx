@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useGetGridState, useRepairNode, getGetGridStateQueryKey } from "@workspace/api-client-react";
 import { type GridNode, type NodeStatus } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -6,6 +6,7 @@ import { Server, Activity, AlertTriangle, Zap, CheckCircle, ShieldAlert, Wifi } 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/date-utils";
 import { toast } from "sonner";
+import { NodeDetail } from "./node-detail";
 
 const NODE_TYPES: Record<string, string> = {
   "node-01": "CORE", "node-02": "CORE", "node-03": "EDGE", "node-04": "HUB",
@@ -16,11 +17,9 @@ const NODE_TYPES: Record<string, string> = {
 
 export function GridMap() {
   const { data: gridState } = useGetGridState({
-    query: {
-      queryKey: getGetGridStateQueryKey(),
-      refetchInterval: 2000,
-    },
+    query: { queryKey: getGetGridStateQueryKey(), refetchInterval: 2000 },
   });
+  const [selectedNode, setSelectedNode] = useState<GridNode | null>(null);
 
   const nodes = gridState?.nodes ?? [];
   const failingCount = nodes.filter(n => n.status === "failing" || n.status === "offline").length;
@@ -50,10 +49,21 @@ export function GridMap() {
         <div className="scanline" />
         <div className="grid grid-cols-4 gap-4 max-w-6xl mx-auto">
           {nodes.map((node) => (
-            <NodeCard key={node.id} node={node} />
+            <NodeCard
+              key={node.id}
+              node={node}
+              onClick={() => setSelectedNode(node)}
+            />
           ))}
         </div>
       </div>
+
+      {selectedNode && (
+        <NodeDetail
+          node={nodes.find(n => n.id === selectedNode.id) ?? selectedNode}
+          onClose={() => setSelectedNode(null)}
+        />
+      )}
     </div>
   );
 }
@@ -70,7 +80,7 @@ function latencyBarColor(latency: number): string {
   return "bg-red-500";
 }
 
-function NodeCard({ node }: { node: GridNode }) {
+function NodeCard({ node, onClick }: { node: GridNode; onClick: () => void }) {
   const queryClient = useQueryClient();
   const repairNode = useRepairNode({
     mutation: {
@@ -83,9 +93,9 @@ function NodeCard({ node }: { node: GridNode }) {
 
   const getCardClass = (status: NodeStatus) => {
     switch (status) {
-      case "healthy":   return "border-green-500/25 bg-green-500/5 text-green-400 hover:border-green-400/50";
-      case "degraded":  return "border-amber-500/50 bg-amber-500/8 text-amber-400 hover:border-amber-400/70";
-      case "failing":   return "border-red-500/80 bg-red-500/10 text-red-400 pulse-red";
+      case "healthy":   return "border-green-500/25 bg-green-500/5 text-green-400 hover:border-green-400/60 hover:shadow-[0_0_20px_rgba(0,255,136,0.08)]";
+      case "degraded":  return "border-amber-500/50 bg-amber-500/8 text-amber-400 hover:border-amber-400/80";
+      case "failing":   return "border-red-500/80 bg-red-500/10 text-red-400 pulse-red cursor-pointer";
       case "repairing": return "border-blue-500/50 bg-blue-500/8 text-blue-400 sweep-blue";
       case "offline":   return "border-gray-700/50 bg-gray-900/30 text-gray-600 opacity-50";
       default:          return "border-border bg-card";
@@ -109,15 +119,18 @@ function NodeCard({ node }: { node: GridNode }) {
   };
 
   return (
-    <div className={cn(
-      "relative rounded-lg border p-4 flex flex-col gap-3 font-mono transition-all duration-500 group cursor-default",
-      getCardClass(node.status)
-    )}>
+    <div
+      onClick={onClick}
+      className={cn(
+        "relative rounded-lg border p-4 flex flex-col gap-3 font-mono transition-all duration-500 group cursor-pointer",
+        getCardClass(node.status)
+      )}
+    >
       <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/20 rounded-lg pointer-events-none" />
 
       <div className="relative z-10 flex justify-between items-start">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
+          <div className="mb-0.5">
             <span className="text-[9px] opacity-50 tracking-widest font-bold">
               {NODE_TYPES[node.id] ?? "NODE"}
             </span>
@@ -147,12 +160,10 @@ function NodeCard({ node }: { node: GridNode }) {
             />
           </div>
         </div>
-
         <div className="flex justify-between items-center opacity-70">
           <span className="text-[10px] tracking-wider">UPTIME</span>
           <span className={node.uptime < 90 ? "text-red-400 font-bold" : ""}>{node.uptime.toFixed(2)}%</span>
         </div>
-
         <div className="flex justify-between items-center opacity-70">
           <span className="text-[10px] tracking-wider">ERR_RATE</span>
           <span className={node.errorRate > 0.05 ? "text-red-400 font-bold" : node.errorRate > 0.01 ? "text-amber-400" : ""}>
@@ -183,12 +194,14 @@ function NodeCard({ node }: { node: GridNode }) {
             size="sm"
             variant="outline"
             className="h-6 text-[10px] font-bold tracking-wider border-current/40 hover:bg-current/10 px-2"
-            onClick={() => repairNode.mutate({ nodeId: node.id })}
+            onClick={(e) => { e.stopPropagation(); repairNode.mutate({ nodeId: node.id }); }}
             disabled={repairNode.isPending}
           >
             {repairNode.isPending ? "…" : "OVERRIDE"}
           </Button>
-        ) : null}
+        ) : (
+          <span className="text-[10px] text-muted-foreground/40 tracking-wider">CLICK TO INSPECT</span>
+        )}
       </div>
     </div>
   );

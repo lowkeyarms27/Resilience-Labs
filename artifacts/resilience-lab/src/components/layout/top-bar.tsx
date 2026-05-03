@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   useGetGridSummary, useInjectShock, useTriggerSentinelScan,
   getGetGridStateQueryKey, getGetGridSummaryQueryKey,
 } from "@workspace/api-client-react";
 import { type InjectShockBodySeverity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, ShieldAlert, Zap, AlertTriangle, CheckCircle, Server, Clock, Radio } from "lucide-react";
+import { Activity, ShieldAlert, Zap, AlertTriangle, CheckCircle, Server, Clock, Radio, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,8 +15,25 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/date-utils";
 
-export function TopBar() {
+type ScenarioId = "ddos_surge" | "cascade_failure" | "zero_day" | "power_outage" | "ransomware_wave";
+
+const SCENARIOS: { id: ScenarioId; name: string; icon: string; color: string; desc: string }[] = [
+  { id: "ddos_surge",      name: "DDoS SURGE",        icon: "⚡", color: "text-orange-400", desc: "Flood attack on edge nodes" },
+  { id: "cascade_failure", name: "CASCADE FAILURE",    icon: "🔗", color: "text-red-400",    desc: "Chain reaction collapse" },
+  { id: "zero_day",        name: "ZERO-DAY EXPLOIT",   icon: "☠",  color: "text-purple-400", desc: "Critical vuln weaponised" },
+  { id: "power_outage",    name: "POWER GRID OUTAGE",  icon: "🔌", color: "text-yellow-400", desc: "Sector power loss" },
+  { id: "ransomware_wave", name: "RANSOMWARE WAVE",    icon: "💀", color: "text-red-600",    desc: "Malware propagation" },
+];
+
+interface TopBarProps {
+  onToggleConsole: () => void;
+  consoleOpen: boolean;
+}
+
+export function TopBar({ onToggleConsole, consoleOpen }: TopBarProps) {
   const queryClient = useQueryClient();
+  const [scenarioLoading, setScenarioLoading] = useState<string | null>(null);
+
   const { data: summary } = useGetGridSummary({
     query: { queryKey: getGetGridSummaryQueryKey(), refetchInterval: 2000 },
   });
@@ -43,53 +60,64 @@ export function TopBar() {
     injectShock.mutate({ data: { severity } });
   };
 
+  const handleScenario = async (scenario: ScenarioId) => {
+    setScenarioLoading(scenario);
+    try {
+      const res = await fetch("/api/grid/scenario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario }),
+      });
+      const data = await res.json() as { scenarioName: string; affectedNodes: string[] };
+      const meta = SCENARIOS.find(s => s.id === scenario);
+      toast.error(`${meta?.icon ?? "⚡"} ${data.scenarioName} initiated — ${data.affectedNodes.length} nodes affected`, { duration: 5000 });
+      queryClient.invalidateQueries({ queryKey: getGetGridStateQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetGridSummaryQueryKey() });
+    } catch {
+      toast.error("Failed to run scenario.");
+    } finally {
+      setScenarioLoading(null);
+    }
+  };
+
   const healthPercent = summary?.overallHealthPercent ?? 100;
   const isCritical = (summary?.failingNodes ?? 0) > 0;
   const isDegraded = (summary?.degradedNodes ?? 0) > 0;
-
-  const healthColor =
-    healthPercent < 50 ? "text-red-400" :
-    healthPercent < 80 ? "text-amber-400" : "text-green-400";
+  const healthColor = healthPercent < 50 ? "text-red-400" : healthPercent < 80 ? "text-amber-400" : "text-green-400";
 
   return (
     <header className={cn(
       "h-16 border-b bg-card flex items-center justify-between px-5 z-10 relative transition-colors duration-700",
       isCritical ? "border-red-500/40" : "border-border"
     )}>
-      {isCritical && (
-        <div className="absolute inset-0 bg-red-500/3 pointer-events-none" />
-      )}
+      {isCritical && <div className="absolute inset-0 bg-red-500/3 pointer-events-none" />}
 
+      {/* Logo */}
       <div className="flex items-center gap-3 text-primary relative z-10 shrink-0">
         <Activity className={cn("w-5 h-5", isCritical ? "pulse-red" : "pulse-blue")} />
         <div>
           <h1 className="font-bold tracking-widest text-base font-mono leading-tight">RESILIENCE LAB</h1>
           <p className="text-[10px] text-muted-foreground font-mono leading-tight">AUTONOMOUS SYSTEM MONITOR</p>
         </div>
-
         <div className="flex items-center gap-1.5 ml-2 text-[10px] font-mono">
           <Radio className="w-3 h-3 text-green-400" />
           <span className="text-green-400 blink font-bold tracking-wider">LIVE</span>
         </div>
       </div>
 
+      {/* Health bar */}
       <div className="flex-1 max-w-xl px-6 flex flex-col gap-1.5 relative z-10">
         <div className="flex justify-between text-[10px] font-mono">
           <span className="text-muted-foreground tracking-wider">OVERALL SYSTEM HEALTH</span>
-          <span className={cn("font-bold", healthColor)}>
-            {healthPercent.toFixed(1)}%
-          </span>
+          <span className={cn("font-bold", healthColor)}>{healthPercent.toFixed(1)}%</span>
         </div>
-        <div className="relative">
-          <Progress
-            value={healthPercent}
-            className={cn(
-              "h-1.5 transition-colors duration-700",
-              isCritical ? "[&>div]:bg-red-500" : isDegraded ? "[&>div]:bg-amber-500" : "[&>div]:bg-green-500"
-            )}
-          />
-        </div>
-
+        <Progress
+          value={healthPercent}
+          className={cn(
+            "h-1.5 transition-colors duration-700",
+            isCritical ? "[&>div]:bg-red-500" : isDegraded ? "[&>div]:bg-amber-500" : "[&>div]:bg-green-500"
+          )}
+        />
         {summary && (
           <div className="flex justify-between gap-3 text-[10px] font-mono text-muted-foreground">
             <span className="flex items-center gap-1"><Server className="w-2.5 h-2.5" /> {summary.totalNodes}</span>
@@ -108,7 +136,25 @@ export function TopBar() {
         )}
       </div>
 
-      <div className="flex items-center gap-3 relative z-10 shrink-0">
+      {/* Actions */}
+      <div className="flex items-center gap-2 relative z-10 shrink-0">
+        {/* Console toggle */}
+        <Button
+          variant={consoleOpen ? "default" : "outline"}
+          size="sm"
+          className={cn(
+            "font-mono text-xs tracking-wider h-8",
+            consoleOpen
+              ? "bg-primary text-primary-foreground"
+              : "border-primary/40 text-primary hover:bg-primary/10"
+          )}
+          onClick={onToggleConsole}
+        >
+          <Terminal className="w-3 h-3 mr-1.5" />
+          CONSOLE
+        </Button>
+
+        {/* Trigger Scan */}
         <Button
           variant="outline"
           size="sm"
@@ -123,6 +169,38 @@ export function TopBar() {
           )}
         </Button>
 
+        {/* Scenarios dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 font-mono text-xs tracking-wider h-8"
+              disabled={!!scenarioLoading}
+            >
+              <ShieldAlert className="w-3 h-3 mr-1.5" />
+              {scenarioLoading ? "RUNNING…" : "SCENARIOS"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-64 font-mono bg-card border-border">
+            <DropdownMenuLabel className="text-[10px] text-muted-foreground tracking-wider">ATTACK SIMULATION</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {SCENARIOS.map((s) => (
+              <DropdownMenuItem
+                key={s.id}
+                className="cursor-pointer flex flex-col items-start gap-0.5 py-2"
+                onClick={() => handleScenario(s.id)}
+              >
+                <div className={cn("flex items-center gap-2 text-xs font-bold", s.color)}>
+                  <span>{s.icon}</span> {s.name}
+                </div>
+                <span className="text-[10px] text-muted-foreground ml-5">{s.desc}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Inject Shock */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

@@ -1,22 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { type AgentLogEntry } from "@workspace/api-client-react";
 import { useGetAgentLogs } from "@workspace/api-client-react";
 
-export function useAgentLogs() {
-  const [logs, setLogs] = useState<AgentLogEntry[]>([]);
-  const logsRef = useRef<AgentLogEntry[]>([]);
-  
-  // Update ref when state changes
-  useEffect(() => {
-    logsRef.current = logs;
-  }, [logs]);
+export type ThinkingState = Record<string, string>; // agent -> partial text
 
-  // Load initial logs
-  const { data: initialLogsData } = useGetAgentLogs({ limit: 50 }, { 
-    query: { 
-      queryKey: ["agentLogs", "initial"],
-      staleTime: Infinity 
-    } 
+export function useAgentLogs(): { logs: AgentLogEntry[]; thinking: ThinkingState } {
+  const [logs, setLogs] = useState<AgentLogEntry[]>([]);
+  const [thinking, setThinking] = useState<ThinkingState>({});
+
+  const { data: initialLogsData } = useGetAgentLogs({ limit: 50 }, {
+    query: { queryKey: ["agentLogs", "initial"], staleTime: Infinity },
   });
 
   useEffect(() => {
@@ -25,35 +18,45 @@ export function useAgentLogs() {
     }
   }, [initialLogsData]);
 
-  // Connect to SSE
   useEffect(() => {
     const eventSource = new EventSource("/api/agents/stream");
-    
+
+    // Default message → completed log entry
     eventSource.onmessage = (event) => {
       try {
         const newLog = JSON.parse(event.data) as AgentLogEntry;
-        setLogs(prev => {
-          // deduplicate
-          if (prev.some(log => log.id === newLog.id)) {
-            return prev;
-          }
-          return [newLog, ...prev].slice(0, 200); // keep last 200
+        if (!newLog.id) return;
+        setLogs((prev) => {
+          if (prev.some((l) => l.id === newLog.id)) return prev;
+          return [newLog, ...prev].slice(0, 200);
         });
-      } catch (err) {
-        console.error("Failed to parse agent log stream data", err);
-      }
+      } catch { /* ignore parse errors */ }
     };
 
-    eventSource.onerror = (err) => {
-      console.error("SSE Error", err);
-      eventSource.close();
-      // Simple reconnect logic could go here
-    };
+    // Named event: AI agent streaming a response
+    eventSource.addEventListener("thinking", (event) => {
+      try {
+        const { agent, partial } = JSON.parse((event as MessageEvent).data) as { agent: string; partial: string };
+        setThinking((prev) => ({ ...prev, [agent]: partial }));
+      } catch { /* ignore */ }
+    });
 
-    return () => {
-      eventSource.close();
-    };
+    // Named event: streaming finished
+    eventSource.addEventListener("thinking-done", (event) => {
+      try {
+        const { agent } = JSON.parse((event as MessageEvent).data) as { agent: string };
+        setThinking((prev) => {
+          const next = { ...prev };
+          delete next[agent];
+          return next;
+        });
+      } catch { /* ignore */ }
+    });
+
+    eventSource.onerror = () => eventSource.close();
+
+    return () => eventSource.close();
   }, []);
 
-  return logs;
+  return { logs, thinking };
 }
